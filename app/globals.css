@@ -1,11 +1,55 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #0a0a0a;
+  --void:   #07070f;
+  --s1:     #0d0d1c;
+  --s2:     #111124;
+  --s3:     #181830;
+  --s4:     #20203c;
+  --border: #252548;
+  --tp:     #eeeef8;
+  --ts:     #9898bc;
+  --tt:     #555578;
+  --td:     #333355;
+  --acc:    #5c5cf0;
+  --at:     #8585ff;
+  --adim:   rgba(92, 92, 240, 0.09);
+  --crit:   #e8455f;
+  --high:   #f5a623;
+  --med:    #3b82f6;
+  --pos:    #22c55e;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background: var(--void);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  color: var(--ts);
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+@layer utilities {
+  .bg-void   { background-color: var(--void); }
+  .bg-s1     { background-color: var(--s1); }
+  .bg-s2     { background-color: var(--s2); }
+  .bg-s3     { background-color: var(--s3); }
+  .bg-s4     { background-color: var(--s4); }
+  .bg-acc    { background-color: var(--acc); }
+  .bg-border { background-color: var(--border); }
+
+  .text-tp   { color: var(--tp); }
+  .text-ts   { color: var(--ts); }
+  .text-tt   { color: var(--tt); }
+  .text-at   { color: var(--at); }
+  .text-acc  { color: var(--acc); }
+
+  .border-base { border-color: var(--border); }
 }
