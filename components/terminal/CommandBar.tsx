@@ -16,7 +16,7 @@ export interface CommandBarProps {
   signals: Signal[]
   briefings: Record<string, Briefing>
   showArchive: boolean
-  searchRef: React.RefObject<HTMLInputElement>
+  searchRef: React.RefObject<HTMLInputElement | null>
   onSignalSelect: (id: string) => void
   onArchiveOpen: () => void
 }
