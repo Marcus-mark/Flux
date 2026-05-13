@@ -75,7 +75,7 @@ export default function SignalItem({ signal, isActive, onClick }: SignalItemProp
       }}
     >
       {/* Row 1: badge + state dot */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {isActive && tier === 'CRITICAL' && (
             <Star size={14} fill="var(--crit)" style={{ color: 'var(--crit)', flexShrink: 0 }} />
@@ -105,7 +105,7 @@ export default function SignalItem({ signal, isActive, onClick }: SignalItemProp
 
       {/* Row 3: source · timestamp + tag pill */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 11, color: 'var(--tt)' }}>
+        <span style={{ fontSize: 11, color: 'var(--tt)', fontFamily: 'monospace' }}>
           {source} · {timestamp}
         </span>
         <span
@@ -113,7 +113,7 @@ export default function SignalItem({ signal, isActive, onClick }: SignalItemProp
             fontSize: 10,
             color: 'var(--tt)',
             backgroundColor: 'var(--s4)',
-            padding: '3px 7px',
+            padding: '4px 8px',
             borderRadius: 3,
             flexShrink: 0,
           }}

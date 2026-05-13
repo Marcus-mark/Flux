@@ -17,7 +17,7 @@ interface SignalQueueProps {
 
 const tabs: { key: Filter; label: string }[] = [
   { key: 'all',  label: 'All'     },
-  { key: 'crit', label: 'Critial' },
+  { key: 'crit', label: 'Critical' },
   { key: 'high', label: 'High'    },
 ]
 
@@ -67,7 +67,7 @@ export default function SignalQueue({
                 style={{
                   fontSize: 11,
                   fontWeight: 600,
-                  padding: isActive ? '4px 14px' : '4px 10px',
+                  padding: isActive ? '4px 16px' : '4px 8px',
                   color: isActive ? 'var(--tp)' : 'var(--ts)',
                   backgroundColor: isActive ? 'var(--acc)' : 'transparent',
                   border: 'none',

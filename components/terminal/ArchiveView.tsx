@@ -68,7 +68,7 @@ function BackBtn({ onClick }: { onClick: () => void }) {
         alignItems: 'center',
         gap: 8,
         height: 30,
-        padding: '0 14px',
+        padding: '0 16px',
         fontSize: 13,
         fontWeight: 500,
         color: hovered ? 'var(--tp)' : 'var(--ts)',
@@ -97,7 +97,7 @@ function FilterPill({ label, isActive, onClick }: { label: string; isActive: boo
       style={{
         fontSize: 11,
         fontWeight: 600,
-        padding: isActive ? '4px 14px' : '4px 10px',
+        padding: isActive ? '4px 16px' : '4px 8px',
         color: isActive ? 'var(--tp)' : hovered ? 'var(--tp)' : 'var(--ts)',
         backgroundColor: isActive ? 'var(--acc)' : 'transparent',
         border: 'none',
@@ -258,12 +258,12 @@ function BriefingModal({ signal, briefing, onClose }: { signal: Signal; briefing
                     {(section.prompts ?? [section.text]).map((p, j) => (
                       <li key={j} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                         <span style={{ color: 'var(--at)', flexShrink: 0 }}>→</span>
-                        <span style={{ fontSize: 14, color: 'var(--ts)', lineHeight: 1.5 }}>{p}</span>
+                        <span style={{ fontSize: 15, color: 'var(--ts)', lineHeight: 1.7 }}>{p}</span>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p style={{ fontSize: 14, color: 'var(--ts)', lineHeight: 1.7, margin: 0 }}>{section.text}</p>
+                  <p style={{ fontSize: 15, color: 'var(--ts)', lineHeight: 1.7, margin: 0 }}>{section.text}</p>
                 )}
               </div>
             ))}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion, useAnimation } from 'framer-motion'
 import { Bookmark, BookmarkCheck, Check, CheckCircle, ChevronRight, Share2, ThumbsDown, ThumbsUp } from 'lucide-react'
 import type { Briefing, Signal } from '@/lib/types'
 
@@ -172,7 +172,7 @@ export default function BriefingPanel({
               }}
             >
               {/* Label */}
-              <div style={{ padding: '12px 16px 10px' }}>
+              <div style={{ padding: '12px 16px' }}>
                 <span
                   style={{
                     fontSize: 10,
@@ -189,13 +189,13 @@ export default function BriefingPanel({
               <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: 0 }} />
 
               {/* Body */}
-              <div style={{ padding: '12px 16px 14px' }}>
+              <div style={{ padding: '12px 16px' }}>
                 {section.type === 'what_to_consider' ? (
-                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {(section.prompts ?? [section.text]).map((prompt, j) => (
                       <li key={j} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                         <span style={{ color: 'var(--at)', flexShrink: 0, marginTop: 1 }}>→</span>
-                        <span style={{ fontSize: 14, color: 'var(--ts)', lineHeight: 1.5 }}>{prompt}</span>
+                        <span style={{ fontSize: 15, color: 'var(--ts)', lineHeight: 1.7 }}>{prompt}</span>
                       </li>
                     ))}
                   </ul>
@@ -224,6 +224,7 @@ export default function BriefingPanel({
             activeBg="rgba(34,197,94,0.12)"
             icon={<ThumbsUp size={13} />}
             label="Useful"
+            animateIcon
           />
           <ActionBtn
             onClick={handleNotRelevant}
@@ -232,6 +233,7 @@ export default function BriefingPanel({
             activeBg="rgba(232,69,95,0.12)"
             icon={<ThumbsDown size={13} />}
             label="Not relevant"
+            animateIcon
           />
 
           <div style={{ width: 1, height: 20, backgroundColor: 'var(--border)', flexShrink: 0 }} />
@@ -266,11 +268,18 @@ export default function BriefingPanel({
         <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: 0 }} />
 
         {/* Confirmation text */}
-        {confirmation && (
-          <p style={{ fontSize: 11, color: 'var(--ts)', margin: '6px 0 0' }}>
-            {confirmation === 'saved' ? 'Saved.' : 'Marked.'}
-          </p>
-        )}
+        <AnimatePresence>
+          {confirmation && (
+            <motion.p
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.15 }}
+              style={{ fontSize: 11, color: 'var(--ts)', margin: '8px 0 0' }}
+            >
+              {confirmation === 'saved' ? 'Saved.' : 'Marked.'}
+            </motion.p>
+          )}
+        </AnimatePresence>
 
         {/* See context link */}
         <button
@@ -308,14 +317,23 @@ interface ActionBtnProps {
   activeBg: string
   icon?: React.ReactNode
   label: string
+  animateIcon?: boolean
 }
 
-function ActionBtn({ onClick, active, activeColor, activeBg, icon, label }: ActionBtnProps) {
+function ActionBtn({ onClick, active, activeColor, activeBg, icon, label, animateIcon }: ActionBtnProps) {
   const [hovered, setHovered] = useState(false)
+  const controls = useAnimation()
+
+  function handleClick() {
+    if (animateIcon) {
+      controls.start({ scale: [1, 1.15, 1], transition: { duration: 0.2, ease: 'easeOut' } })
+    }
+    onClick()
+  }
 
   return (
     <button
-      onClick={onClick}
+      onClick={handleClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
@@ -333,7 +351,9 @@ function ActionBtn({ onClick, active, activeColor, activeBg, icon, label }: Acti
         backgroundColor: active ? activeBg : hovered ? 'var(--s4)' : 'var(--s3)',
       }}
     >
-      {icon}
+      {icon && animateIcon
+        ? <motion.span style={{ display: 'inline-flex' }} animate={controls}>{icon}</motion.span>
+        : icon}
       {label}
     </button>
   )

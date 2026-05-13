@@ -101,7 +101,7 @@ export default function ContextDrawer({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '14px 18px',
+              padding: '18px 18px',
               borderBottom: '1px solid var(--border)',
               flexShrink: 0,
             }}
@@ -142,11 +142,17 @@ export default function ContextDrawer({
 
             {/* Tab panels */}
             <div style={{ flex: 1, overflowY: 'auto' }}>
+              <motion.div
+                key={localTab}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.15 }}
+              >
               {localTab === 'sources' && (
                 !briefing || briefing.sources.length === 0 ? (
                   <Empty text="No sources available" />
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 14 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 18 }}>
                     {briefing.sources.map((src, i) => (
                       <Card key={i}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
@@ -163,7 +169,7 @@ export default function ContextDrawer({
                               fontWeight: 600,
                               color: 'var(--at)',
                               backgroundColor: 'var(--s4)',
-                              padding: '7px 12px',
+                              padding: '8px 12px',
                               borderRadius: 6,
                               textDecoration: 'none',
                               flexShrink: 0,
@@ -183,7 +189,7 @@ export default function ContextDrawer({
                 !briefing || !briefing.relatedSignals?.length ? (
                   <Empty text="No related signals" />
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 14 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 18 }}>
                     {briefing.relatedSignals.map((s, i) => {
                       const { headline, source, time } = parseRelated(s)
                       return (
@@ -208,7 +214,7 @@ export default function ContextDrawer({
                 !briefing || !briefing.timeline?.length ? (
                   <Empty text="No timeline events" />
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 14 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 18 }}>
                     {briefing.timeline.map((item, i) => (
                       <Card key={i}>
                         <p style={{ fontSize: 13, color: 'var(--ts)', lineHeight: 1.5, marginBottom: 10 }}>
@@ -229,7 +235,7 @@ export default function ContextDrawer({
                 !briefing || !briefing.reasoningText ? (
                   <Empty text="No reasoning available" />
                 ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: 14 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 18 }}>
                     {reasoningCards.map((point, i) => (
                       <Card key={i}>
                         <p style={{ fontSize: 13, color: 'var(--ts)', lineHeight: 1.7, margin: 0 }}>
@@ -240,6 +246,7 @@ export default function ContextDrawer({
                   </div>
                 )
               )}
+              </motion.div>
             </div>
           </div>
         </motion.div>
