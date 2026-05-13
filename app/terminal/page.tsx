@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Archive,
   Bell,
@@ -14,103 +14,67 @@ import {
 import SignalQueue from '@/components/terminal/SignalQueue'
 import BriefingPanel from '@/components/terminal/BriefingPanel'
 import ContextDrawer from '@/components/terminal/ContextDrawer'
-import type { Briefing, Signal } from '@/lib/types'
+import EmptyState from '@/components/shared/EmptyState'
+import ArchiveView from '@/components/terminal/ArchiveView'
+import { mockBriefings, mockSignals } from '@/lib/mock-data'
+import type { Signal } from '@/lib/types'
 
-const initialSignals: Signal[] = [
-  {
-    id: 'sig-1',
-    tier: 'CRITICAL',
-    score: 94,
-    headline: 'OpenAI removes GPT-4 from API — calls rerouting to GPT-4o',
-    source: 'OpenAI',
-    timestamp: '1h ago',
-    tag: 'API Change',
-    state: 'unread',
-  },
-  {
-    id: 'sig-2',
-    tier: 'HIGH',
-    score: 83,
-    headline: 'Mistral launches Le Chat Pro with code interpreter',
-    source: 'Mistral',
-    timestamp: '2h ago',
-    tag: 'Product Launch',
-    state: 'unread',
-  },
-  {
-    id: 'sig-3',
-    tier: 'HIGH',
-    score: 77,
-    headline: 'GitHub Copilot adds Claude 3.5 Sonnet in VS Code',
-    source: 'GitHub',
-    timestamp: '3h ago',
-    tag: 'Integration',
-    state: 'unread',
-  },
-  {
-    id: 'sig-4',
-    tier: 'MEDIUM',
-    score: 64,
-    headline: 'Perplexity raises $500M at $9B valuation',
-    source: 'Perplexity',
-    timestamp: '4h ago',
-    tag: 'Funding',
-    state: 'unread',
-  },
-  {
-    id: 'sig-5',
-    tier: 'MEDIUM',
-    score: 58,
-    headline: 'Replit releases Agent SDK for third-party tools',
-    source: 'Replit',
-    timestamp: '5h ago',
-    tag: 'SDK Release',
-    state: 'unread',
-  },
-]
+function getBriefing(id: string) {
+  return mockBriefings[id]
+}
 
-const briefings: Briefing[] = [
-  {
-    signalId: 'sig-1',
-    openingStatement:
-      'OpenAI just removed GPT-4 from the API with no migration window. If your product calls gpt-4, it is already affected.',
-    sections: [
-      {
-        type: 'what_changed',
-        text: 'OpenAI deprecated gpt-4 API access across all tiers. Calls now route silently to gpt-4o. No warning was issued. No opt-out exists.',
-      },
-      {
-        type: 'why_it_matters',
-        text: 'Silent rerouting means your output behaviour has already changed. GPT-4o is a different model — prompts validated on GPT-4 will drift. Any product built on consistent GPT-4 output is now operating on unvalidated assumptions.',
-      },
-      {
-        type: 'what_to_consider',
-        text: '',
-        prompts: [
-          'Audit codebase for gpt-4 model strings today.',
-          'Run regression tests against gpt-4o on your core prompts.',
-          'If GPT-4 consistency was in your pitch, update it now.',
-        ],
-      },
-    ],
-    reasoningText:
-      'Domain match: direct API deprecation. Novelty: forced migration, no window. Time sensitivity: live now.',
-    sources: [{ name: 'OpenAI status page', url: '#', label: '→ Read' }],
-    relatedSignals: ['Developers report output drift after GPT-4→GPT-4o reroute · HN · 2h ago'],
-    timeline: [{ date: 'Mar 2024', event: 'GPT-4 Turbo replaced GPT-4 silently.' }],
-  },
-]
-
-function getBriefing(id: string): Briefing | undefined {
-  return briefings.find(b => b.signalId === id)
+function ArchiveBtn({ isActive, onClick }: { isActive: boolean; onClick: () => void }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <button
+      className="flex items-center gap-1.5 text-[12px]"
+      style={{ color: isActive ? 'var(--at)' : hovered ? 'var(--ts)' : '#606080', transition: 'color 0.12s ease' }}
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <Archive size={13} />
+      Archive
+    </button>
+  )
 }
 
 export default function TerminalPage() {
-  const [signals, setSignals] = useState<Signal[]>(initialSignals)
-  const [activeSignalId, setActiveSignalId] = useState<string | null>(initialSignals[0].id)
+  const [signals, setSignals] = useState<Signal[]>(mockSignals)
+  const [activeSignalId, setActiveSignalId] = useState<string | null>(mockSignals[0].id)
   const [filter, setFilter] = useState<'all' | 'crit' | 'high'>('all')
   const [contextOpen, setContextOpen] = useState(false)
   const [contextTab, setContextTab] = useState<'sources' | 'related' | 'timeline' | 'reasoning'>('sources')
+  const [showArchive, setShowArchive] = useState(false)
+  const searchRef = useRef<HTMLInputElement>(null)
+
+  const nonDismissed = useMemo(
+    () => signals.filter(s => s.state !== 'dismissed'),
+    [signals]
+  )
+
+  const filteredSignals = useMemo(() => {
+    return nonDismissed
+      .filter(s => {
+        if (filter === 'crit') return s.tier === 'CRITICAL'
+        if (filter === 'high') return s.tier === 'CRITICAL' || s.tier === 'HIGH'
+        return true
+      })
+      .sort((a, b) => b.score - a.score)
+  }, [nonDismissed, filter])
+
+  function applyFilter(sigs: Signal[], f: 'all' | 'crit' | 'high') {
+    return sigs
+      .filter(s => {
+        if (f === 'crit') return s.tier === 'CRITICAL'
+        if (f === 'high') return s.tier === 'CRITICAL' || s.tier === 'HIGH'
+        return true
+      })
+      .sort((a, b) => b.score - a.score)
+  }
+
+  function handleArchiveOpen()  { setShowArchive(true)  }
+  function handleArchiveClose() { setShowArchive(false) }
 
   function handleContextOpen() {
     setContextOpen(true)
@@ -130,11 +94,109 @@ export default function TerminalPage() {
     setSignals(prev =>
       prev.map(s => s.id === id && s.state === 'unread' ? { ...s, state: 'viewed' } : s)
     )
-    handleContextClose()
+    setContextOpen(false)
   }
+
+  function handleFilterChange(newFilter: 'all' | 'crit' | 'high') {
+    setFilter(newFilter)
+    const newFiltered = applyFilter(nonDismissed, newFilter)
+    if (!newFiltered.find(s => s.id === activeSignalId)) {
+      const next = newFiltered[0] ?? null
+      setActiveSignalId(next?.id ?? null)
+      if (next && next.state === 'unread') {
+        setSignals(prev => prev.map(s => s.id === next.id ? { ...s, state: 'viewed' } : s))
+      }
+    }
+  }
+
+  function handleSave() {
+    if (!activeSignalId) return
+    setSignals(prev => prev.map(s => s.id === activeSignalId ? { ...s, state: 'saved' } : s))
+  }
+
+  function handleActed() {
+    if (!activeSignalId) return
+    setSignals(prev => prev.map(s => s.id === activeSignalId ? { ...s, state: 'acted' } : s))
+  }
+
+  function handleDismiss() {
+    if (!activeSignalId) return
+    const currentIndex = filteredSignals.findIndex(s => s.id === activeSignalId)
+    const remaining = filteredSignals.filter(s => s.id !== activeSignalId)
+    const next = remaining[Math.min(currentIndex, remaining.length - 1)] ?? null
+    setSignals(prev => prev.map(s => {
+      if (s.id === activeSignalId) return { ...s, state: 'dismissed' as const }
+      if (next && s.id === next.id && s.state === 'unread') return { ...s, state: 'viewed' as const }
+      return s
+    }))
+    setActiveSignalId(next?.id ?? null)
+  }
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') {
+        if (e.key === 'Escape') (e.target as HTMLElement).blur()
+        return
+      }
+      const currentIndex = filteredSignals.findIndex(s => s.id === activeSignalId)
+      switch (e.key.toLowerCase()) {
+        case 'j': {
+          const next = filteredSignals[currentIndex + 1]
+          if (next) {
+            setActiveSignalId(next.id)
+            setSignals(prev => prev.map(s => s.id === next.id && s.state === 'unread' ? { ...s, state: 'viewed' } : s))
+            setContextOpen(false)
+          }
+          break
+        }
+        case 'k': {
+          const prev = filteredSignals[currentIndex - 1]
+          if (prev) {
+            setActiveSignalId(prev.id)
+            setSignals(p => p.map(s => s.id === prev.id && s.state === 'unread' ? { ...s, state: 'viewed' } : s))
+            setContextOpen(false)
+          }
+          break
+        }
+        case 's':
+          if (activeSignalId) setSignals(prev => prev.map(s => s.id === activeSignalId ? { ...s, state: 'saved' } : s))
+          break
+        case 'a':
+          if (activeSignalId) setSignals(prev => prev.map(s => s.id === activeSignalId ? { ...s, state: 'acted' } : s))
+          break
+        case 'd': {
+          if (!activeSignalId) break
+          const remaining = filteredSignals.filter(s => s.id !== activeSignalId)
+          const next = remaining[Math.min(currentIndex, remaining.length - 1)] ?? null
+          setSignals(prev => prev.map(s => {
+            if (s.id === activeSignalId) return { ...s, state: 'dismissed' as const }
+            if (next && s.id === next.id && s.state === 'unread') return { ...s, state: 'viewed' as const }
+            return s
+          }))
+          setActiveSignalId(next?.id ?? null)
+          break
+        }
+        case 'c':
+          setContextOpen(o => !o)
+          break
+        case '/':
+          e.preventDefault()
+          searchRef.current?.focus()
+          break
+        case 'escape':
+          setContextOpen(false)
+          break
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [signals, filteredSignals, activeSignalId])
 
   const activeSignal   = signals.find(s => s.id === activeSignalId)
   const activeBriefing = activeSignalId ? getBriefing(activeSignalId) : undefined
+  const isSaved = activeSignal?.state === 'saved'
+  const isActed = activeSignal?.state === 'acted'
 
   return (
     <div
@@ -159,6 +221,7 @@ export default function TerminalPage() {
         >
           <Search size={12} style={{ color: '#A0A0C0', flexShrink: 0 }} />
           <input
+            ref={searchRef}
             type="text"
             placeholder="Search briefings and signals..."
             className="flex-1 min-w-0 bg-transparent text-[12px] text-ts placeholder:text-tt outline-none"
@@ -178,10 +241,7 @@ export default function TerminalPage() {
         <div className="flex-1" />
 
         <div className="flex items-center gap-4">
-          <button className="flex items-center gap-1.5 text-[12px]" style={{ color: '#606080' }}>
-            <Archive size={13} />
-            Archive
-          </button>
+          <ArchiveBtn isActive={showArchive} onClick={handleArchiveOpen} />
 
           <button className="flex items-center gap-1.5 text-[12px]" style={{ color: '#606080' }}>
             <Radio size={13} />
@@ -209,8 +269,16 @@ export default function TerminalPage() {
         </div>
       </header>
 
+      {showArchive && (
+        <ArchiveView
+          signals={signals}
+          briefings={Object.values(mockBriefings)}
+          onClose={handleArchiveClose}
+        />
+      )}
+
       {/* ── Three columns ── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden" style={{ display: showArchive ? 'none' : undefined }}>
 
         {/* LEFT — Signals */}
         <aside
@@ -218,11 +286,12 @@ export default function TerminalPage() {
           style={{ width: 400, borderRight: '1px solid var(--border)' }}
         >
           <SignalQueue
-            signals={signals}
+            filteredSignals={filteredSignals}
+            totalNonDismissed={nonDismissed.length}
             activeSignalId={activeSignalId}
             filter={filter}
             onSignalSelect={handleSignalSelect}
-            onFilterChange={f => setFilter(f)}
+            onFilterChange={handleFilterChange}
           />
         </aside>
 
@@ -239,25 +308,52 @@ export default function TerminalPage() {
             <PanelRight size={16} className="text-tt" />
           </div>
 
-          {/* BriefingPanel fills remaining height */}
+          {/* Center content */}
           <div className="flex-1 overflow-hidden">
-            <BriefingPanel
-              briefing={activeBriefing}
-              signal={activeSignal}
-              onSave={() => console.log('save', activeSignalId)}
-              onDismiss={() => console.log('dismiss', activeSignalId)}
-              onActed={() => console.log('acted', activeSignalId)}
-              onShare={() => console.log('share', activeSignalId)}
-              onFeedback={f => console.log('feedback', activeSignalId, f)}
-              onContextOpen={handleContextOpen}
-              isSaved={false}
-              isActed={false}
-              usefulActive={false}
-              notRelevantActive={false}
-            />
+            {nonDismissed.length === 0 ? (
+              <EmptyState variant="queue" />
+            ) : filteredSignals.length === 0 ? (
+              <EmptyState variant="filter" onClearFilter={() => handleFilterChange('all')} />
+            ) : (
+              <BriefingPanel
+                briefing={activeBriefing}
+                signal={activeSignal}
+                onSave={handleSave}
+                onDismiss={handleDismiss}
+                onActed={handleActed}
+                onShare={() => console.log('share', activeSignalId)}
+                onFeedback={f => console.log('feedback', activeSignalId, f)}
+                onContextOpen={handleContextOpen}
+                isSaved={isSaved}
+                isActed={isActed}
+                usefulActive={false}
+                notRelevantActive={false}
+              />
+            )}
           </div>
         </main>
 
+      </div>
+
+      {/* ── Status bar ── */}
+      <div
+        className="flex-shrink-0 flex items-center justify-center gap-2"
+        style={{ height: 36, borderTop: '1px solid var(--border)', backgroundColor: 'var(--s1)', display: showArchive ? 'none' : undefined }}
+      >
+        <span style={{ fontSize: 11, color: 'var(--tt)', fontFamily: 'monospace' }}>
+          {filter === 'all'
+            ? `${nonDismissed.length} signal${nonDismissed.length !== 1 ? 's' : ''} · 3 min ago`
+            : `${filteredSignals.length} of ${nonDismissed.length} · ${filter === 'crit' ? 'Critical' : 'High'} filter active`
+          }
+        </span>
+        {filter !== 'all' && (
+          <button
+            onClick={() => handleFilterChange('all')}
+            style={{ fontSize: 11, color: 'var(--at)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          >
+            × Clear
+          </button>
+        )}
       </div>
 
       <ContextDrawer
@@ -268,6 +364,7 @@ export default function TerminalPage() {
         onClose={handleContextClose}
         onTabChange={handleContextTabChange}
       />
+
     </div>
   )
 }

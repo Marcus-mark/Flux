@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Bookmark, BookmarkCheck, Check, CheckCircle, ChevronRight, Share2, ThumbsDown, ThumbsUp } from 'lucide-react'
 import type { Briefing, Signal } from '@/lib/types'
 
@@ -51,7 +52,9 @@ export default function BriefingPanel({
     setIsActed(isActedProp)
     setUseful(usefulProp)
     setNotRelevant(notRelevantProp)
-  }, [isSavedProp, isActedProp, usefulProp, notRelevantProp])
+    setConfirmation(null)
+    if (timerRef.current) clearTimeout(timerRef.current)
+  }, [signal?.id, isSavedProp, isActedProp, usefulProp, notRelevantProp])
 
   function showConfirmation(type: 'saved' | 'acted') {
     setConfirmation(type)
@@ -83,35 +86,43 @@ export default function BriefingPanel({
     onFeedback('not-relevant')
   }
 
-  if (!briefing || !signal) {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100%',
-          fontSize: 13,
-          color: 'var(--tt)',
-        }}
-      >
-        Select a signal to read its briefing
-      </div>
-    )
-  }
+  const scrollRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0
+  }, [signal?.id])
 
   return (
     <div
+      ref={scrollRef}
       style={{
-        display: 'flex',
-        flexDirection: 'column',
         overflowY: 'auto',
-        padding: '32px 36px',
         backgroundColor: 'var(--s1)',
         height: '100%',
-        boxSizing: 'border-box',
       }}
     >
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={signal?.id ?? 'empty'}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -4 }}
+          transition={{ duration: 0.18, ease: 'easeOut' }}
+        >
+      {(!briefing || !signal) ? (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '60vh',
+            fontSize: 13,
+            color: 'var(--tt)',
+          }}
+        >
+          Select a signal to read its briefing
+        </div>
+      ) : (
+      <div style={{ padding: '32px 36px', boxSizing: 'border-box' }}>
       <div style={{ maxWidth: 640, width: '100%', margin: '0 auto' }}>
 
         {/* Opening statement */}
@@ -261,6 +272,10 @@ export default function BriefingPanel({
         </button>
 
       </div>
+      </div>
+      )}
+        </motion.div>
+      </AnimatePresence>
     </div>
   )
 }

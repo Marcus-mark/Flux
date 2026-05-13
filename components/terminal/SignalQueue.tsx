@@ -1,12 +1,14 @@
 'use client'
 
+import { AnimatePresence, motion } from 'framer-motion'
 import SignalItem from '@/components/terminal/SignalItem'
 import type { Signal } from '@/lib/types'
 
 type Filter = 'all' | 'crit' | 'high'
 
 interface SignalQueueProps {
-  signals: Signal[]
+  filteredSignals: Signal[]
+  totalNonDismissed: number
   activeSignalId: string | null
   filter: Filter
   onSignalSelect: (id: string) => void
@@ -14,33 +16,19 @@ interface SignalQueueProps {
 }
 
 const tabs: { key: Filter; label: string }[] = [
-  { key: 'all',  label: 'All'    },
+  { key: 'all',  label: 'All'     },
   { key: 'crit', label: 'Critial' },
-  { key: 'high', label: 'High'   },
+  { key: 'high', label: 'High'    },
 ]
 
-function applyFilter(signals: Signal[], filter: Filter): Signal[] {
-  return signals
-    .filter(s => s.state !== 'dismissed')
-    .filter(s => {
-      if (filter === 'crit') return s.tier === 'CRITICAL'
-      if (filter === 'high') return s.tier === 'CRITICAL' || s.tier === 'HIGH'
-      return true
-    })
-    .sort((a, b) => b.score - a.score)
-}
-
 export default function SignalQueue({
-  signals,
+  filteredSignals,
+  totalNonDismissed,
   activeSignalId,
   filter,
   onSignalSelect,
   onFilterChange,
 }: SignalQueueProps) {
-  const nonDismissed = signals.filter(s => s.state !== 'dismissed')
-  const filtered = applyFilter(signals, filter)
-  const hiddenCount = nonDismissed.length - filtered.length
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
 
@@ -103,68 +91,33 @@ export default function SignalQueue({
 
         <span
           style={{
-            marginLeft: 'auto',
             fontSize: 11,
             color: 'var(--tt)',
             fontVariantNumeric: 'tabular-nums',
           }}
         >
-          {nonDismissed.length}
+          {totalNonDismissed}
         </span>
       </div>
 
       {/* Signal list */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '0 8px' }}>
-        {nonDismissed.length === 0 ? (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '100%',
-              fontSize: 12,
-              color: 'var(--tt)',
-            }}
-          >
-            No signals in queue
-          </div>
-        ) : (
-          <>
-            {filtered.map(signal => (
+        <AnimatePresence initial={false}>
+          {filteredSignals.map(signal => (
+            <motion.div
+              key={signal.id}
+              exit={{ opacity: 0, height: 0 }}
+              style={{ overflow: 'hidden' }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+            >
               <SignalItem
-                key={signal.id}
                 signal={signal}
                 isActive={signal.id === activeSignalId}
                 onClick={() => onSignalSelect(signal.id)}
               />
-            ))}
-            {hiddenCount > 0 && (
-              <div
-                style={{
-                  padding: '10px 16px',
-                  fontSize: 10,
-                  color: 'var(--td)',
-                }}
-              >
-                {hiddenCount} signal{hiddenCount !== 1 ? 's' : ''} below filter
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div
-        style={{
-          flexShrink: 0,
-          padding: '10px 16px',
-          borderTop: '1px solid var(--border)',
-          fontSize: 10,
-          fontFamily: 'monospace',
-          color: 'var(--tt)',
-        }}
-      >
-        {nonDismissed.length} signal{nonDismissed.length !== 1 ? 's' : ''} · 3 min ago
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
 
     </div>
