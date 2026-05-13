@@ -43,6 +43,7 @@ export interface Briefing {
   sources: SourceRef[];
   relatedSignals?: string[];
   timeline?: { date: string; event: string }[];
+  isAIGenerated?: boolean;
 }
 
 export interface UserContext {

@@ -17,10 +17,24 @@ import ContextDrawer from '@/components/terminal/ContextDrawer'
 import EmptyState from '@/components/shared/EmptyState'
 import ArchiveView from '@/components/terminal/ArchiveView'
 import { mockBriefings, mockSignals } from '@/lib/mock-data'
-import type { Signal } from '@/lib/types'
+import { calculateRelevanceScore, getSortedSignals } from '@/lib/scoring'
+import type { Briefing, Signal, UserContext } from '@/lib/types'
 
-function getBriefing(id: string) {
-  return mockBriefings[id]
+const userContext: UserContext = {
+  role: 'Founder / Builder',
+  interests: ['APIs & dev tools', 'Competitor moves'],
+  watchlist: ['OpenAI', 'Anthropic', 'Cursor'],
+  threshold: 60,
+}
+
+const scoredSignals = getSortedSignals(mockSignals, userContext)
+
+const initialBriefings: Record<string, Briefing> = { ...mockBriefings }
+for (const signal of scoredSignals) {
+  const { reasoning } = calculateRelevanceScore(signal, userContext)
+  if (initialBriefings[signal.id]) {
+    initialBriefings[signal.id] = { ...initialBriefings[signal.id], reasoningText: reasoning }
+  }
 }
 
 function ArchiveBtn({ isActive, onClick }: { isActive: boolean; onClick: () => void }) {
@@ -40,12 +54,14 @@ function ArchiveBtn({ isActive, onClick }: { isActive: boolean; onClick: () => v
 }
 
 export default function TerminalPage() {
-  const [signals, setSignals] = useState<Signal[]>(mockSignals)
-  const [activeSignalId, setActiveSignalId] = useState<string | null>(mockSignals[0].id)
-  const [filter, setFilter] = useState<'all' | 'crit' | 'high'>('all')
-  const [contextOpen, setContextOpen] = useState(false)
-  const [contextTab, setContextTab] = useState<'sources' | 'related' | 'timeline' | 'reasoning'>('sources')
-  const [showArchive, setShowArchive] = useState(false)
+  const [signals, setSignals]           = useState<Signal[]>(scoredSignals)
+  const [briefings, setBriefings]       = useState<Record<string, Briefing>>(initialBriefings)
+  const [activeSignalId, setActiveSignalId] = useState<string | null>(scoredSignals[0].id)
+  const [generatingFor, setGeneratingFor]   = useState<string | null>(null)
+  const [filter, setFilter]             = useState<'all' | 'crit' | 'high'>('all')
+  const [contextOpen, setContextOpen]   = useState(false)
+  const [contextTab, setContextTab]     = useState<'sources' | 'related' | 'timeline' | 'reasoning'>('sources')
+  const [showArchive, setShowArchive]   = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
 
   const nonDismissed = useMemo(
@@ -89,12 +105,47 @@ export default function TerminalPage() {
     setContextTab(tab as typeof contextTab)
   }
 
+  async function generateAIBriefing(signal: Signal) {
+    if (briefings[signal.id]?.isAIGenerated) return
+    setGeneratingFor(signal.id)
+    try {
+      const res = await fetch('/api/generate-briefing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ signal, userContext }),
+      })
+      const data = await res.json()
+      if (data.ok) {
+        const ai = data.briefing
+        setBriefings(prev => ({
+          ...prev,
+          [signal.id]: {
+            ...prev[signal.id],
+            openingStatement: ai.openingStatement,
+            sections: [
+              { type: 'what_changed',     text: ai.whatChanged },
+              { type: 'why_it_matters',   text: ai.whyItMatters },
+              { type: 'what_to_consider', text: '', prompts: ai.whatToConsider },
+            ],
+            isAIGenerated: true,
+          },
+        }))
+      }
+    } catch {
+      // keep mock briefing silently
+    } finally {
+      setGeneratingFor(prev => prev === signal.id ? null : prev)
+    }
+  }
+
   function handleSignalSelect(id: string) {
     setActiveSignalId(id)
     setSignals(prev =>
       prev.map(s => s.id === id && s.state === 'unread' ? { ...s, state: 'viewed' } : s)
     )
     setContextOpen(false)
+    const signal = signals.find(s => s.id === id)
+    if (signal) generateAIBriefing(signal)
   }
 
   function handleFilterChange(newFilter: 'all' | 'crit' | 'high') {
@@ -194,7 +245,7 @@ export default function TerminalPage() {
   }, [signals, filteredSignals, activeSignalId])
 
   const activeSignal   = signals.find(s => s.id === activeSignalId)
-  const activeBriefing = activeSignalId ? getBriefing(activeSignalId) : undefined
+  const activeBriefing = activeSignalId ? briefings[activeSignalId] : undefined
   const isSaved = activeSignal?.state === 'saved'
   const isActed = activeSignal?.state === 'acted'
 
@@ -272,7 +323,7 @@ export default function TerminalPage() {
       {showArchive && (
         <ArchiveView
           signals={signals}
-          briefings={Object.values(mockBriefings)}
+          briefings={Object.values(briefings)}
           onClose={handleArchiveClose}
         />
       )}
@@ -328,6 +379,7 @@ export default function TerminalPage() {
                 isActed={isActed}
                 usefulActive={false}
                 notRelevantActive={false}
+                isGenerating={generatingFor === activeSignalId}
               />
             )}
           </div>

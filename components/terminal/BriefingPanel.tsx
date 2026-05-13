@@ -18,6 +18,7 @@ interface BriefingPanelProps {
   isActed: boolean
   usefulActive: boolean
   notRelevantActive: boolean
+  isGenerating?: boolean
 }
 
 const sectionLabel: Record<string, string> = {
@@ -39,6 +40,7 @@ export default function BriefingPanel({
   isActed: isActedProp,
   usefulActive: usefulProp,
   notRelevantActive: notRelevantProp,
+  isGenerating = false,
 }: BriefingPanelProps) {
   const [isSaved, setIsSaved]           = useState(isSavedProp)
   const [isActed, setIsActed]           = useState(isActedProp)
@@ -126,19 +128,36 @@ export default function BriefingPanel({
       <div style={{ maxWidth: 640, width: '100%', margin: '0 auto' }}>
 
         {/* Opening statement */}
-        <p
-          style={{
-            fontSize: 20,
-            fontWeight: 700,
-            color: 'var(--tp)',
-            letterSpacing: '-0.3px',
-            lineHeight: 1.3,
-            marginBottom: 28,
-            textAlign: 'center',
-          }}
-        >
-          {briefing.openingStatement}
-        </p>
+        <div style={{ position: 'relative', marginBottom: 28 }}>
+          {isGenerating && (
+            <motion.div
+              animate={{ opacity: [0.3, 1, 0.3] }}
+              transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
+              style={{
+                position: 'absolute',
+                top: 4,
+                right: 0,
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                backgroundColor: 'var(--at)',
+              }}
+            />
+          )}
+          <p
+            style={{
+              fontSize: 20,
+              fontWeight: 700,
+              color: 'var(--tp)',
+              letterSpacing: '-0.3px',
+              lineHeight: 1.3,
+              textAlign: 'center',
+              margin: 0,
+            }}
+          >
+            {briefing.openingStatement}
+          </p>
+        </div>
 
         <hr style={{ border: 'none', borderTop: '1px solid var(--border)', marginBottom: 24 }} />
 
