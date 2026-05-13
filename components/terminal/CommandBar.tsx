@@ -40,7 +40,7 @@ function IconBtn({
 }: {
   children: React.ReactNode
   onClick?: () => void
-  btnRef?: React.RefObject<HTMLButtonElement>
+  btnRef?: React.RefObject<HTMLButtonElement | null>
   active?: boolean
 }) {
   const [hovered, setHovered] = useState(false)
